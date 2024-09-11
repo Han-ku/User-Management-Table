@@ -1,10 +1,12 @@
 import React from 'react'
 import { useEffect, useState } from "react";
+import SingleUser from './SingleUser';
 
 export default function Users() {
-    const [data, setData] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const [data, setData] = useState(null)
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState(null)
+    const [keys, setKeys] = useState([])
 
     const url = 'https://jsonplaceholder.typicode.com/users'
 
@@ -14,6 +16,7 @@ export default function Users() {
                 const response = await fetch(url)
                 const apiData = await response.json()
                 setData(apiData)
+                setKeys(Object.keys(apiData[0]))
                 console.log('Users: ', apiData)
             } catch(e) {
                 console.error('Error fetching users:', e)
@@ -42,16 +45,31 @@ export default function Users() {
 
     return (
         <>
-            <div className="mediaContainer">
-                <h1>Users list</h1>
-                <ul>
-                    {data.map((user) => (
-                    <li key={user.id}>
-                        {user.name}
-                    </li>
-                    ))}
-                </ul>
-            </div>
+            <main className="table">
+                <section className="table_header">
+                    <h1>Users list</h1>
+                </section>
+                <section className="table_body">
+                    <table>
+                        <thead>
+                            <tr>
+                               {keys.map((key) =>(
+                                    <th key={key}>
+                                        {key}
+                                    </th>
+                               ))}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {data.map((user) => (
+                                <tr key={user.id}>
+                                    <SingleUser user={user} keys={keys} />
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </section>
+            </main>
         </>
     )
 }
