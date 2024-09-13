@@ -4,9 +4,14 @@ import SingleUser from './SingleUser';
 
 export default function Users() {
     const [data, setData] = useState(null)
+    const [filteredData, setFilteredData] = useState(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
-    const [keys, setKeys] = useState([])
+    const [searchQuery, setSearchQuery] = useState('')
+    const [columnFilters, setColumnFilters] = useState({})
+    const [inputVisible, setInputVisible] = useState({})
+
+    const keys = ["name", "username", "email", "phone"]
 
     const url = 'https://jsonplaceholder.typicode.com/users'
 
@@ -16,7 +21,7 @@ export default function Users() {
                 const response = await fetch(url)
                 const apiData = await response.json()
                 setData(apiData)
-                setKeys(Object.keys(apiData[0]))
+                setFilteredData(apiData)
                 console.log('Users: ', apiData)
             } catch(e) {
                 console.error('Error fetching users:', e)
@@ -43,11 +48,59 @@ export default function Users() {
         return <div> Error: {error} </div>;
     }
 
+    const handleSearch = (e) => {
+        e.preventDefault()
+
+        if (data) {
+            const filtered = data.filter(user => {
+                return keys.some(key =>
+                    user[key].toString().toLowerCase().includes(searchQuery.toLowerCase())
+                )
+            })
+            setFilteredData(filtered)
+        }
+    }
+
+    const handleColumnSearch = (key, value) => {
+        const updatedFilters = { ...columnFilters, [key]: value }
+    
+        setColumnFilters(updatedFilters)
+    
+        const filtered = data.filter(user =>
+            Object.keys(updatedFilters).every(columnKey => {
+                if (updatedFilters[columnKey]) {
+                    const filterValue = updatedFilters[columnKey].toLowerCase()
+                    const userValue = user[columnKey].toString().toLowerCase()
+                    
+                    return userValue.startsWith(filterValue) || userValue === filterValue
+                }
+                return true
+            })
+        )
+        setFilteredData(filtered)
+    }
+
+    const toggleInputVisibility = (key) => {
+        setInputVisible({
+            ...inputVisible,
+            [key]: !inputVisible[key] 
+        })
+    }
+
     return (
         <>
             <main className="table">
-                <section className="table_header">
-                    <h1>Users list</h1>
+                <section className='section_filter'>
+                     <form onSubmit={handleSearch}>
+                        <input 
+                            type="text" 
+                            id="name" 
+                            name="name" 
+                            placeholder="Search..." 
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)} />
+                        <button type="submit" className='submit'>Submit</button>
+                    </form>
                 </section>
                 <section className="table_body">
                     <table>
@@ -56,12 +109,21 @@ export default function Users() {
                                {keys.map((key) =>(
                                     <th key={key}>
                                         {key}
+                                        <button className='findByKey' onClick={() => toggleInputVisibility(key)} />
+                                        {inputVisible[key] && (
+                                            <input
+                                                type="text"
+                                                placeholder={`Search ${key}`}
+                                                value={columnFilters[key] || ""}
+                                                onChange={(e) => handleColumnSearch(key, e.target.value)}
+                                            />
+                                        )}
                                     </th>
                                ))}
                             </tr>
                         </thead>
                         <tbody>
-                            {data.map((user) => (
+                            {filteredData.map((user) => (
                                 <tr key={user.id}>
                                     <SingleUser user={user} keys={keys} />
                                 </tr>
