@@ -1,5 +1,5 @@
 import './App.css';
-import Users from './compoments/Users'
+import Users from './compoments/UsersTable'
 
 function App() {
   return (
