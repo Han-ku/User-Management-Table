@@ -1,15 +1,47 @@
 import React from 'react'
-import { useEffect, useState } from "react";
+import { useEffect, useReducer } from "react";
 import SingleUser from './SingleUser';
 
+const initialState = {
+    data: null,
+    filteredData: null,
+    loading: true,
+    error: null,
+    searchQuery: '',
+    columnFilters: {},
+    inputVisible: {}
+}
+
+const reducer = (state, action) => {
+    switch (action.type) {
+        case 'SET_DATA':
+            return { ...state, data: action.payload, filteredData: action.payload, loading: false }
+        case 'SET_ERROR':
+            return { ...state, error: action.payload, loading: false }
+        case 'SET_LOADING':
+            return { ...state, loading: action.payload }
+        case 'SET_SEARCH_QUERY':
+            return { ...state, searchQuery: action.payload }
+        case 'SET_FILTERED_DATA':
+            return { ...state, filteredData: action.payload }
+        case 'SET_COLUMN_FILTERS':
+            return { ...state, columnFilters: action.payload }
+        case 'TOGGLE_INPUT_VISIBLE':
+            return {
+                ...state,
+                inputVisible: {
+                    ...state.inputVisible,
+                    [action.key]: !state.inputVisible[action.key]
+                }
+            }
+        default:
+            throw new Error('Unknown action type')
+    }
+}
+
 export default function Users() {
-    const [data, setData] = useState(null)
-    const [filteredData, setFilteredData] = useState(null)
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState(null)
-    const [searchQuery, setSearchQuery] = useState('')
-    const [columnFilters, setColumnFilters] = useState({})
-    const [inputVisible, setInputVisible] = useState({})
+    const [state, dispatch] = useReducer(reducer, initialState)
+    const { data, filteredData, loading, error, searchQuery, columnFilters, inputVisible } = state;
 
     const keys = ["name", "username", "email", "phone"]
 
@@ -20,16 +52,10 @@ export default function Users() {
             try {
                 const response = await fetch(url)
                 const apiData = await response.json()
-                setData(apiData)
-                setFilteredData(apiData)
-                console.log('Users: ', apiData)
+                dispatch({ type: 'SET_DATA', payload: apiData })
             } catch(e) {
-                console.error('Error fetching users:', e)
-                setError(e.message)
-            } finally {
-                setLoading(false)
+                dispatch({ type: 'SET_ERROR', payload: e.message })
             }
-            
         }
 
         fetchAPIData()
@@ -57,14 +83,14 @@ export default function Users() {
                     user[key].toString().toLowerCase().includes(searchQuery.toLowerCase())
                 )
             })
-            setFilteredData(filtered)
+            dispatch({ type: 'SET_FILTERED_DATA', payload: filtered })
         }
     }
 
     const handleColumnSearch = (key, value) => {
         const updatedFilters = { ...columnFilters, [key]: value }
     
-        setColumnFilters(updatedFilters)
+        dispatch({ type: 'SET_COLUMN_FILTERS', payload: updatedFilters })
     
         const filtered = data.filter(user =>
             Object.keys(updatedFilters).every(columnKey => {
@@ -77,14 +103,11 @@ export default function Users() {
                 return true
             })
         )
-        setFilteredData(filtered)
+        dispatch({ type: 'SET_FILTERED_DATA', payload: filtered })
     }
 
     const toggleInputVisibility = (key) => {
-        setInputVisible({
-            ...inputVisible,
-            [key]: !inputVisible[key] 
-        })
+        dispatch({ type: 'TOGGLE_INPUT_VISIBLE', key })
     }
 
     return (
@@ -98,7 +121,7 @@ export default function Users() {
                             name="name" 
                             placeholder="Search..." 
                             value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)} />
+                            onChange={(e) => dispatch({ type: 'SET_SEARCH_QUERY', payload: e.target.value })} />
                         <button type="submit" className='submit'>Submit</button>
                     </form>
                 </section>
