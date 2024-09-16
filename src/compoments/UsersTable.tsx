@@ -1,4 +1,4 @@
-import React, { useEffect, FormEvent } from 'react'
+import React, { useEffect, FormEvent, useState } from 'react'
 import SingleUser from '../compoments/SingleUser';
 import { useSelector, useDispatch } from 'react-redux'
 import { setData, setError, setLoading, setSearchQuery, setFilteredData, setSelectedFields} from './usersTableSlice'
@@ -21,25 +21,47 @@ const UsersTable: React.FC = () => {
     const keys: (keyof User)[] = ["name", "username", "email", "phone"]
     const url = 'https://jsonplaceholder.typicode.com/users'
 
+    const [showLoading, setShowLoading] = useState(false);
+
     useEffect(() => {
         const fetchAPIData = async () => {
             dispatch(setLoading(true))
+
+            const loadingTimeoutId = setTimeout(() => {
+                setShowLoading(true)
+            }, 1000)
+
+            const errorTimeoutId = setTimeout(() => {
+                dispatch(setError('Database not found'))
+                dispatch(setLoading(false))
+                setShowLoading(false)
+            }, 10000)
+
             try {
                 const response = await fetch(url)
+                if(!response.ok) {
+                    throw new Error('Failed to fetch data')
+                }
                 const apiData = await response.json()
                 dispatch(setData(apiData))
+                clearTimeout(errorTimeoutId)
+                clearTimeout(loadingTimeoutId)
+                setShowLoading(false)
             } catch (e: any) {
-                dispatch(setError(e.message))
+                dispatch(setError('Database not found'))
+                setShowLoading(false)
+                clearTimeout(loadingTimeoutId)
+            }finally {
+                dispatch(setLoading(false))
             }
         }
-
         fetchAPIData()
     }, [dispatch])
 
-    if (loading) {
+    if (loading && showLoading) {
         return (
             <div className="loadingState">
-                <img src="../../public/gear.png" alt="" />
+                <img src="\gear.png" alt="Loading.." />
             </div>
         )
     }
