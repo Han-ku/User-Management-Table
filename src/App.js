@@ -1,5 +1,5 @@
 import './App.css';
-import Users from './compoments/UsersTable'
+import Users from '../src/compoments/UsersTable.tsx'
 
 function App() {
   return (

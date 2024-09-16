@@ -1,6 +1,11 @@
 import React from 'react'
 
-const SingleUser = React.memo(({ user, keys }) => {
+interface SingleUserProps {
+  user: Record<string, any>
+  keys: string[]
+}
+
+const SingleUser: React.FC<SingleUserProps> = React.memo(({ user, keys }) => {
   return (
     <>
         {keys.map((key) => (

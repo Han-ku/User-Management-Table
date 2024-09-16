@@ -1,16 +1,24 @@
-import React from 'react'
-import SingleUser from './SingleUser';
-import { useEffect } from "react";
+import React, { useEffect, FormEvent } from 'react'
+import SingleUser from '../compoments/SingleUser';
 import { useSelector, useDispatch } from 'react-redux'
 import { setData, setError, setLoading, setSearchQuery, setFilteredData, setColumnFilters, toggleInputVisible } from './usersTableSlice'
+import { RootState, AppDispatch } from '../app/store'; 
 
-const UsersTable = () => {
+interface User {
+    id: number;
+    name: string;
+    username: string;
+    email: string;
+    phone: string;
+}
 
-    const dispatch = useDispatch()
+const UsersTable: React.FC = () => {
 
-    const { data, filteredData, loading, error, searchQuery, columnFilters, inputVisible } = useSelector(state => state.usersTable)
+    const dispatch = useDispatch<AppDispatch>()
+
+    const { data, filteredData, loading, error, searchQuery, columnFilters, inputVisible } = useSelector((state: RootState) => state.usersTable)
     
-    const keys = ["name", "username", "email", "phone"]
+    const keys: (keyof User)[] = ["name", "username", "email", "phone"]
     const url = 'https://jsonplaceholder.typicode.com/users'
 
     useEffect(() => {
@@ -20,7 +28,7 @@ const UsersTable = () => {
                 const response = await fetch(url)
                 const apiData = await response.json()
                 dispatch(setData(apiData))
-            } catch (e) {
+            } catch (e: any) {
                 dispatch(setError(e.message))
             }
         }
@@ -33,43 +41,46 @@ const UsersTable = () => {
             <div className="loadingState">
                 <i className="fa-solid fa-gear fa-spin"></i>
             </div>
-        );
+        )
     }
 
     if (error) {
         return <div>Error: {error}</div>
     }
 
-    const handleSearch = (e) => {
+    const handleSearch = (e: FormEvent) => {
         e.preventDefault()
         if (data) {
             const filtered = data.filter(user =>
                 keys.some(key =>
-                    user[key].toString().toLowerCase().includes(searchQuery.toLowerCase())
+                    user[key]?.toString().toLowerCase().includes(searchQuery.toLowerCase())
                 )
             )
             dispatch(setFilteredData(filtered))
         }
     }
 
-    const handleColumnSearch = (key, value) => {
+    const handleColumnSearch = (key: keyof User, value: string) => {
         const updatedFilters = { ...columnFilters, [key]: value }
         dispatch(setColumnFilters(updatedFilters))
 
-        const filtered = data.filter(user =>
-            Object.keys(updatedFilters).every(columnKey => {
-                if (updatedFilters[columnKey]) {
-                    const filterValue = updatedFilters[columnKey].toLowerCase()
-                    const userValue = user[columnKey].toString().toLowerCase()
-                    return userValue.startsWith(filterValue) || userValue === filterValue
-                }
-                return true
-            })
-        )
-        dispatch(setFilteredData(filtered))
+        if(data) {
+            const filtered = data.filter(user =>
+                Object.keys(updatedFilters).every(columnKey => {
+                    if (updatedFilters[columnKey]) {
+                        const filterValue = updatedFilters[columnKey].toLowerCase()
+                        const userValue = user[columnKey].toString().toLowerCase()
+                        return userValue.startsWith(filterValue) || userValue === filterValue
+                    }
+                    return true
+                })
+            )
+            dispatch(setFilteredData(filtered))
+        }
+        
     }
 
-    const toggleInputVisibility = (key) => {
+    const toggleInputVisibility = (key: keyof User) => {
         dispatch(toggleInputVisible(key))
     }
 
@@ -111,11 +122,17 @@ const UsersTable = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {filteredData.map((user) => (
-                                <tr key={user.id}>
-                                    <SingleUser user={user} keys={keys} />
+                            {filteredData && filteredData.length > 0 ? (
+                                filteredData.map((user) => (
+                                    <tr key={user.id}>
+                                        <SingleUser user={user} keys={keys} />
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colSpan={keys.length}>No data available</td>
                                 </tr>
-                            ))}
+                            )}
                         </tbody>
                     </table>
                 </section>
