@@ -31,16 +31,6 @@ main.table {
   border-radius: .6rem;
 }
 
-form {
-  display: flex;
-  align-items: center;
-  width: 100%;
-}
-
-form > div {
-  width: 80%;
-}
-
 input#name {
   width: 100%;
   padding: .7rem 1rem;
@@ -194,12 +184,5 @@ tbody tr:hover {
 @media (max-width: 700px) {
   .options {
     flex-direction: column;
-  }
-
-  .submit {
-    border: none;
-    background: url('../public/search.png') no-repeat center;
-    background-size: contain;
-    text-indent: -9999px;
   }
 }

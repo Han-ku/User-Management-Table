@@ -1,4 +1,4 @@
-import React, { useEffect, FormEvent, useState } from 'react'
+import React, { useEffect, useState, useMemo } from 'react'
 import SingleUser from '../compoments/SingleUser';
 import { useSelector, useDispatch } from 'react-redux'
 import { setData, setError, setLoading, setSearchQuery, setFilteredData, setSelectedFields} from './usersTableSlice'
@@ -18,7 +18,7 @@ const UsersTable: React.FC = () => {
 
     const { data, filteredData, loading, error, searchQuery, selectedFields} = useSelector((state: RootState) => state.usersTable)
     
-    const keys: (keyof User)[] = ["name", "username", "email", "phone"]
+    const keys = useMemo<(keyof User)[]>(() => ["name", "username", "email", "phone"], [])
     const url = 'https://jsonplaceholder.typicode.com/users'
 
     const [showLoading, setShowLoading] = useState(false);
@@ -58,6 +58,21 @@ const UsersTable: React.FC = () => {
         fetchAPIData()
     }, [dispatch])
 
+    useEffect(() => {
+        if (data) {
+            const fieldsToSearch = selectedFields.length === 0 || selectedFields.length === keys.length
+                ? keys.map(key => key.toString())
+                : selectedFields
+    
+            const filtered = data.filter(user =>
+                fieldsToSearch.some(key =>
+                    user[key]?.toString().toLowerCase().includes(searchQuery.toLowerCase())
+                )
+            )
+            dispatch(setFilteredData(filtered))
+        }
+    }, [searchQuery, data, selectedFields, keys, dispatch])
+
     if (loading && showLoading) {
         return (
             <div className="loadingState">
@@ -83,62 +98,41 @@ const UsersTable: React.FC = () => {
     
         dispatch(setSelectedFields(updatedFields))
     }
-    
-    const handleSearch = (e: FormEvent) => {
-        e.preventDefault();
-
-        const fieldsToSearch = selectedFields.length === 0 || selectedFields.length === keys.length
-            ? keys.map(key => key.toString())
-            : selectedFields
-
-        if (data) {
-            const filtered = data.filter(user =>
-                fieldsToSearch.some(key =>
-                    user[key]?.toString().toLowerCase().includes(searchQuery.toLowerCase())
-                )
-            )
-            dispatch(setFilteredData(filtered))
-        }
-    }
 
     return (
         <>
             <main className="table">
                 <section className="section_filter">
-                    <form onSubmit={handleSearch}>
-                        <div>
-                            <input
-                                type="text"
-                                id="name"
-                                name="name"
-                                placeholder="Search..."
-                                value={searchQuery}
-                                onChange={(e) => dispatch(setSearchQuery(e.target.value))}
-                            />
-                            <div className="multi-select">
-                                <details>
-                                    <summary>Sort By</summary> 
-                                    <div className="options">
-                                        {keys.map((key) => (
-                                            <div className="selectors" key={key}>
-                                                <input
-                                                    type="checkbox"
-                                                    id={`checkbox-${key}`}
-                                                    value={key}
-                                                    checked={selectedFields.includes(key)}
-                                                    onChange={handleSelectChange}
-                                                />
-                                                <label htmlFor={`checkbox-${key}`}>{key}</label>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    
-                                </details>
-                            </div>
+                    <div>
+                        <input
+                            type="text"
+                            id="name"
+                            name="name"
+                            placeholder="Search..."
+                            value={searchQuery}
+                            onChange={(e) => dispatch(setSearchQuery(e.target.value))}
+                        />
+                        <div className="multi-select">
+                            <details>
+                                <summary>Sort By</summary> 
+                                <div className="options">
+                                    {keys.map((key) => (
+                                        <div className="selectors" key={key}>
+                                            <input
+                                                type="checkbox"
+                                                id={`checkbox-${key}`}
+                                                value={key}
+                                                checked={selectedFields.includes(key)}
+                                                onChange={handleSelectChange}
+                                            />
+                                            <label htmlFor={`checkbox-${key}`}>{key}</label>
+                                        </div>
+                                    ))}
+                                </div>
+                                
+                            </details>
                         </div>
-                        
-                        <button type="submit" className="submit">Search</button>
-                    </form>
+                    </div>
                 </section>
                 <section className="table_body">
                     <table>
