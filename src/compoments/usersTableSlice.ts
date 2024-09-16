@@ -16,6 +16,10 @@ interface UsersTableState {
     error: string | null;
     searchQuery: string;
     selectedFields: string[]; 
+    filters: {
+        [key: string]: string;
+    };
+    activeHeader: string | null;
 }
 
 const initialState: UsersTableState = {
@@ -25,6 +29,8 @@ const initialState: UsersTableState = {
     error: null,
     searchQuery: '',
     selectedFields: [],
+    filters: {},
+    activeHeader: null,
 }
 
 export const usersSlice = createSlice({
@@ -51,7 +57,13 @@ export const usersSlice = createSlice({
         },
         setFilteredData: (state, action: PayloadAction<User[]>) => {
             state.filteredData = action.payload
-        }
+        },
+        setActiveHeader: (state, action: PayloadAction<string | null>) => {
+            state.activeHeader = action.payload;
+        },
+        setFilter: (state, action: PayloadAction<{ key: keyof User; value: string }>) => {
+            state.filters[action.payload.key] = action.payload.value;
+        },
     }
 })
 
@@ -59,6 +71,6 @@ export const usersSlice = createSlice({
 export const { 
     setData, setError, setLoading, 
     setSearchQuery,setSelectedFields,
-    setFilteredData} = usersSlice.actions
+    setFilteredData, setActiveHeader, setFilter} = usersSlice.actions
 
 export default usersSlice.reducer

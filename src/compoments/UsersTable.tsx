@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react'
 import SingleUser from '../compoments/SingleUser';
 import { useSelector, useDispatch } from 'react-redux'
-import { setData, setError, setLoading, setSearchQuery, setFilteredData, setSelectedFields} from './usersTableSlice'
+import { setData, setError, setLoading, setSearchQuery, setFilteredData, setSelectedFields,  setActiveHeader, setFilter} from './usersTableSlice'
 import { RootState, AppDispatch } from '../app/store'; 
 
 interface User {
@@ -16,7 +16,7 @@ const UsersTable: React.FC = () => {
 
     const dispatch = useDispatch<AppDispatch>()
 
-    const { data, filteredData, loading, error, searchQuery, selectedFields} = useSelector((state: RootState) => state.usersTable)
+    const { data, filteredData, loading, error, searchQuery, selectedFields, activeHeader, filters} = useSelector((state: RootState) => state.usersTable)
     
     const keys = useMemo<(keyof User)[]>(() => ["name", "username", "email", "phone"], [])
     const url = 'https://jsonplaceholder.typicode.com/users'
@@ -59,19 +59,53 @@ const UsersTable: React.FC = () => {
     }, [dispatch])
 
     useEffect(() => {
-        if (data) {
-            const fieldsToSearch = selectedFields.length === 0 || selectedFields.length === keys.length
-                ? keys.map(key => key.toString())
-                : selectedFields
-    
-            const filtered = data.filter(user =>
-                fieldsToSearch.some(key =>
-                    user[key]?.toString().toLowerCase().includes(searchQuery.toLowerCase())
+        const handleClickOutside = (event: MouseEvent) => {
+            const target = event.target as HTMLElement;
+            if (!target.closest('th') && activeHeader !== null) {
+                dispatch(setActiveHeader(null))
+            }
+        }
+
+        document.addEventListener('mousedown', handleClickOutside)
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside)
+        }
+    }, [activeHeader, dispatch])
+
+    useEffect(() => {
+        if (data) {    
+            const filtered = data.filter(user => {
+                return (
+                    keys.every((key) => 
+                        user[key]?.toString().toLowerCase().includes(filters[key]?.toLowerCase() || '')
+                    ) && keys.some(key =>
+                        user[key]?.toString().toLowerCase().includes(searchQuery.toLowerCase())
+                    )
                 )
-            )
+            })
             dispatch(setFilteredData(filtered))
         }
-    }, [searchQuery, data, selectedFields, keys, dispatch])
+    }, [filters, data, searchQuery, keys, dispatch])
+
+    const handleHeaderClick = (key: keyof User) => {
+        dispatch(setActiveHeader(activeHeader === key ? null : key))
+    }
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>, key: keyof User) => {
+        const value = e.target.value;
+        dispatch(setFilter({ key, value }))
+    }
+
+    const handleResetFilters = () => {
+        keys.forEach((key) => {
+            dispatch(setFilter({ key, value: '' }))
+        })
+        dispatch(setSearchQuery(''))
+        if (data) {
+            dispatch(setFilteredData(data))
+        }
+    }
 
     if (loading && showLoading) {
         return (
@@ -85,25 +119,12 @@ const UsersTable: React.FC = () => {
         return <div>Error: {error}</div>
     }
 
-    const handleSelectChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value
-        const isChecked = e.target.checked
-    
-        let updatedFields: string[]
-        if (isChecked) {
-            updatedFields = [...selectedFields, value]
-        } else {
-            updatedFields = selectedFields.filter(field => field !== value)
-        }
-    
-        dispatch(setSelectedFields(updatedFields))
-    }
 
     return (
         <>
             <main className="table">
-                <section className="section_filter">
-                    <div>
+                <section className='table_header'>
+                    <div className="filter">
                         <input
                             type="text"
                             id="name"
@@ -112,36 +133,30 @@ const UsersTable: React.FC = () => {
                             value={searchQuery}
                             onChange={(e) => dispatch(setSearchQuery(e.target.value))}
                         />
-                        <div className="multi-select">
-                            <details>
-                                <summary>Sort By</summary> 
-                                <div className="options">
-                                    {keys.map((key) => (
-                                        <div className="selectors" key={key}>
-                                            <input
-                                                type="checkbox"
-                                                id={`checkbox-${key}`}
-                                                value={key}
-                                                checked={selectedFields.includes(key)}
-                                                onChange={handleSelectChange}
-                                            />
-                                            <label htmlFor={`checkbox-${key}`}>{key}</label>
-                                        </div>
-                                    ))}
-                                </div>
-                                
-                            </details>
-                        </div>
+                    </div>
+                    <div id='container_btn'>
+                        <button id='btn-reset' onClick={handleResetFilters}>Reset all filters</button>
                     </div>
                 </section>
+                
                 <section className="table_body">
                     <table>
                         <thead>
                             <tr>
                                 {keys.map((key) => (
-                                    <th key={key}>
-                                        {key}
-                                    </th>
+                                     <th key={key} onClick={() => handleHeaderClick(key)}>
+                                     {activeHeader === key ? (
+                                         <input
+                                             type="text"
+                                             value={filters[key] || ''}
+                                             placeholder={`Filter by ${key}`}
+                                             onChange={(e) => handleInputChange(e, key)}
+                                             autoFocus
+                                         />
+                                     ) : (
+                                         key
+                                     )}
+                                 </th>
                                 ))}
                             </tr>
                         </thead>
