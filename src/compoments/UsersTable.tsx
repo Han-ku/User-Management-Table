@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react'
 import SingleUser from '../compoments/SingleUser';
 import { useSelector, useDispatch } from 'react-redux'
-import { setData, setError, setLoading, setSearchQuery, setFilteredData, setSelectedFields,  setActiveHeader, setFilter} from './usersTableSlice'
+import { setData, setError, setLoading, setSearchQuery, setFilteredData,  setActiveHeader, setFilter} from './usersTableSlice'
 import { RootState, AppDispatch } from '../app/store'; 
 
 interface User {
@@ -16,7 +16,7 @@ const UsersTable: React.FC = () => {
 
     const dispatch = useDispatch<AppDispatch>()
 
-    const { data, filteredData, loading, error, searchQuery, selectedFields, activeHeader, filters} = useSelector((state: RootState) => state.usersTable)
+    const { data, filteredData, loading, error, searchQuery, activeHeader, filters} = useSelector((state: RootState) => state.usersTable)
     
     const keys = useMemo<(keyof User)[]>(() => ["name", "username", "email", "phone"], [])
     const url = 'https://jsonplaceholder.typicode.com/users'
