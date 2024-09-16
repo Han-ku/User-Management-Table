@@ -1,7 +1,7 @@
 import React, { useEffect, FormEvent } from 'react'
 import SingleUser from '../compoments/SingleUser';
 import { useSelector, useDispatch } from 'react-redux'
-import { setData, setError, setLoading, setSearchQuery, setFilteredData, setColumnFilters, toggleInputVisible } from './usersTableSlice'
+import { setData, setError, setLoading, setSearchQuery, setFilteredData, setSelectedFields} from './usersTableSlice'
 import { RootState, AppDispatch } from '../app/store'; 
 
 interface User {
@@ -16,7 +16,7 @@ const UsersTable: React.FC = () => {
 
     const dispatch = useDispatch<AppDispatch>()
 
-    const { data, filteredData, loading, error, searchQuery, columnFilters, inputVisible } = useSelector((state: RootState) => state.usersTable)
+    const { data, filteredData, loading, error, searchQuery, selectedFields} = useSelector((state: RootState) => state.usersTable)
     
     const keys: (keyof User)[] = ["name", "username", "email", "phone"]
     const url = 'https://jsonplaceholder.typicode.com/users'
@@ -39,7 +39,7 @@ const UsersTable: React.FC = () => {
     if (loading) {
         return (
             <div className="loadingState">
-                <i className="fa-solid fa-gear fa-spin"></i>
+                <img src="../../public/gear.png" alt="" />
             </div>
         )
     }
@@ -48,11 +48,30 @@ const UsersTable: React.FC = () => {
         return <div>Error: {error}</div>
     }
 
+    const handleSelectChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value
+        const isChecked = e.target.checked
+    
+        let updatedFields: string[]
+        if (isChecked) {
+            updatedFields = [...selectedFields, value]
+        } else {
+            updatedFields = selectedFields.filter(field => field !== value)
+        }
+    
+        dispatch(setSelectedFields(updatedFields))
+    }
+    
     const handleSearch = (e: FormEvent) => {
-        e.preventDefault()
+        e.preventDefault();
+
+        const fieldsToSearch = selectedFields.length === 0 || selectedFields.length === keys.length
+            ? keys.map(key => key.toString())
+            : selectedFields
+
         if (data) {
             const filtered = data.filter(user =>
-                keys.some(key =>
+                fieldsToSearch.some(key =>
                     user[key]?.toString().toLowerCase().includes(searchQuery.toLowerCase())
                 )
             )
@@ -60,45 +79,43 @@ const UsersTable: React.FC = () => {
         }
     }
 
-    const handleColumnSearch = (key: keyof User, value: string) => {
-        const updatedFilters = { ...columnFilters, [key]: value }
-        dispatch(setColumnFilters(updatedFilters))
-
-        if(data) {
-            const filtered = data.filter(user =>
-                Object.keys(updatedFilters).every(columnKey => {
-                    if (updatedFilters[columnKey]) {
-                        const filterValue = updatedFilters[columnKey].toLowerCase()
-                        const userValue = user[columnKey].toString().toLowerCase()
-                        return userValue.startsWith(filterValue) || userValue === filterValue
-                    }
-                    return true
-                })
-            )
-            dispatch(setFilteredData(filtered))
-        }
-        
-    }
-
-    const toggleInputVisibility = (key: keyof User) => {
-        dispatch(toggleInputVisible(key))
-    }
-
-
     return (
         <>
             <main className="table">
                 <section className="section_filter">
                     <form onSubmit={handleSearch}>
-                        <input
-                            type="text"
-                            id="name"
-                            name="name"
-                            placeholder="Search..."
-                            value={searchQuery}
-                            onChange={(e) => dispatch(setSearchQuery(e.target.value))}
-                        />
-                        <button type="submit" className="submit">Submit</button>
+                        <div>
+                            <input
+                                type="text"
+                                id="name"
+                                name="name"
+                                placeholder="Search..."
+                                value={searchQuery}
+                                onChange={(e) => dispatch(setSearchQuery(e.target.value))}
+                            />
+                            <div className="multi-select">
+                                <details>
+                                    <summary>Sort By</summary> 
+                                    <div className="options">
+                                        {keys.map((key) => (
+                                            <div className="selectors" key={key}>
+                                                <input
+                                                    type="checkbox"
+                                                    id={`checkbox-${key}`}
+                                                    value={key}
+                                                    checked={selectedFields.includes(key)}
+                                                    onChange={handleSelectChange}
+                                                />
+                                                <label htmlFor={`checkbox-${key}`}>{key}</label>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    
+                                </details>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" className="submit">Search</button>
                     </form>
                 </section>
                 <section className="table_body">
@@ -108,15 +125,6 @@ const UsersTable: React.FC = () => {
                                 {keys.map((key) => (
                                     <th key={key}>
                                         {key}
-                                        <button className="findByKey" onClick={() => toggleInputVisibility(key)} />
-                                        {inputVisible[key] && (
-                                            <input
-                                                type="text"
-                                                placeholder={`Search ${key}`}
-                                                value={columnFilters[key] || ""}
-                                                onChange={(e) => handleColumnSearch(key, e.target.value)}
-                                            />
-                                        )}
                                     </th>
                                 ))}
                             </tr>

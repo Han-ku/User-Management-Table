@@ -15,8 +15,7 @@ interface UsersTableState {
     loading: boolean;
     error: string | null;
     searchQuery: string;
-    columnFilters: Record<string, string>;
-    inputVisible: Record<string, boolean>;
+    selectedFields: string[]; 
 }
 
 const initialState: UsersTableState = {
@@ -25,8 +24,7 @@ const initialState: UsersTableState = {
     loading: true,
     error: null,
     searchQuery: '',
-    columnFilters: {},
-    inputVisible: {}
+    selectedFields: [],
 }
 
 export const usersSlice = createSlice({
@@ -48,18 +46,11 @@ export const usersSlice = createSlice({
         setSearchQuery: (state, action: PayloadAction<string>) => {
             state.searchQuery = action.payload
         },
+        setSelectedFields: (state, action: PayloadAction<string[]>) => {
+            state.selectedFields = action.payload;
+        },
         setFilteredData: (state, action: PayloadAction<User[]>) => {
             state.filteredData = action.payload
-        },
-        setColumnFilters: (state, action: PayloadAction<Record<string, string>>) => {
-            state.columnFilters = action.payload
-        },
-        toggleInputVisible: (state, action: PayloadAction<string>) => {
-            if (typeof state.inputVisible[action.payload] === 'undefined') {
-                state.inputVisible[action.payload] = true
-            } else {
-                state.inputVisible[action.payload] = !state.inputVisible[action.payload]
-            }
         }
     }
 })
@@ -67,7 +58,7 @@ export const usersSlice = createSlice({
 
 export const { 
     setData, setError, setLoading, 
-    setSearchQuery, setFilteredData, 
-    setColumnFilters, toggleInputVisible} = usersSlice.actions
+    setSearchQuery,setSelectedFields,
+    setFilteredData} = usersSlice.actions
 
 export default usersSlice.reducer
